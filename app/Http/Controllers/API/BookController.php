@@ -7,6 +7,7 @@ use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Validator;
 use Illuminate\Support\Facades\Storage;
 use App\Models\Book;
+use CloudinaryLabs\CloudinaryLaravel\Facades\Cloudinary;
 
 class BookController extends Controller
 {
@@ -62,17 +63,9 @@ class BookController extends Controller
 
         $data = $validator->validated();
 
-        // membuat unique name pada gambar yang di input
+        $uploadedFileUrl = Cloudinary::upload($request->file('image')->getRealPath())->getSecurePath();
 
-        $imageName = time().'.'.$request->image->extension();
-
-        // simpan gambar pada file storage
-
-        $request->image->storeAs('public/images', $imageName);
-
-        // menganti request nilai request image menjadi $imageName yang baru bukan berdasarkan request
-        $path = env('APP_URL').'/storage/images/';
-        $data['image'] = $path.$imageName;
+        $data['image'] = $uploadedFileUrl;
 
         $book = Book::create($data);
 
@@ -125,17 +118,9 @@ class BookController extends Controller
             ], 404);
         }
            
-        $image = basename($book->image);
-        Storage::delete('public/images/' . $image);
-    
+        $uploadedFileUrl = Cloudinary::upload($request->file('image')->getRealPath())->getSecurePath();
 
-        $imageName = time().'.'.$request->image->extension();
-
-        $request->image->storeAs('public/images', $imageName);
-
-        $path = env('APP_URL').'/storage/images/';
-        $data['image'] = $path.$imageName;
-        
+        $data['image'] = $uploadedFileUrl;
 
         $book->update($data);
 
@@ -158,10 +143,6 @@ class BookController extends Controller
         }
 
         if($book) {
-            if ($book->poster) {
-                $poster = basename($book->poster);
-                Storage::delete('public/images/' . $poster);
-            }
             $book->delete();
 
             return response()->json([
